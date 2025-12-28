@@ -1,7 +1,55 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
+import '../services/auth_service.dart';
+import '../models/models.dart';
+import 'login_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final ApiService _apiService = ApiService();
+  final AuthService _authService = AuthService();
+  Driver? _driver;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final driver = await _apiService.getMyProfile();
+      setState(() {
+        _driver = driver;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        // Clean up error message
+        String errorMsg = e.toString();
+        if (errorMsg.contains('401') || errorMsg.contains('Unauthorized')) {
+          errorMsg = 'Please login to view your profile';
+        } else {
+          errorMsg = errorMsg.replaceAll('Exception: ', '');
+        }
+        _error = errorMsg;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +80,32 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildProfileHeader(Color primary, Color text, Color subText) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    if (_error != null) {
+      return Center(
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Error: $_error',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: _loadProfile,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         Stack(
@@ -41,10 +115,13 @@ class ProfileScreen extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: primary, width: 3),
               ),
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 60,
-                backgroundColor: Color(0xFFE2E8F0),
-                backgroundImage: NetworkImage('https://placeholder.com/200'),
+                backgroundColor: const Color(0xFFE2E8F0),
+                child: Text(
+                  _driver?.username.substring(0, 1).toUpperCase() ?? 'D',
+                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             Positioned(
@@ -64,14 +141,21 @@ class ProfileScreen extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          'Alex Johnson',
+          _driver?.username ?? 'Driver',
           style: TextStyle(color: text, fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
-          'Professional Driver • ID: DRV-9928',
+          _driver?.email ?? '',
           style: TextStyle(color: subText, fontSize: 14),
         ),
+        if (_driver?.phone != null && _driver!.phone!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            _driver!.phone!,
+            style: TextStyle(color: subText, fontSize: 14),
+          ),
+        ],
       ],
     );
   }
@@ -127,7 +211,7 @@ class ProfileScreen extends StatelessWidget {
           _buildDivider(),
           _buildMenuItem(Icons.account_balance_wallet_outlined, 'Earnings History', text),
           _buildDivider(),
-          _buildMenuItem(Icons.description_outline, 'Documents & License', text),
+          _buildMenuItem(Icons.article_outlined, 'Documents & License', text),
           _buildDivider(),
           _buildMenuItem(Icons.settings_outlined, 'Settings', text),
         ],
@@ -152,7 +236,15 @@ class ProfileScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: TextButton(
-        onPressed: () {},
+        onPressed: () async {
+          await _authService.logout();
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+            );
+          }
+        },
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
           minimumSize: const Size(double.infinity, 50),

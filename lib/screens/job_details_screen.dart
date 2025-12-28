@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'active_job_map_screen.dart';
+import '../models/models.dart';
 
 class JobDetailsScreen extends StatelessWidget {
-  const JobDetailsScreen({super.key});
+  final Shipment? shipment;
+  
+  const JobDetailsScreen({super.key, this.shipment});
 
   @override
   Widget build(BuildContext context) {
@@ -357,7 +360,7 @@ class JobDetailsScreen extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ActiveJobMapScreen()),
+                MaterialPageRoute(builder: (context) => ActiveJobMapScreen(shipment: widget.shipment)),
               );
             },
             style: ElevatedButton.styleFrom(

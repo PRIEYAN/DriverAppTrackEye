@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../widgets/shipment_map_widget.dart';
+import '../models/models.dart';
 
 class ActiveJobMapScreen extends StatelessWidget {
-  const ActiveJobMapScreen({super.key});
+  final Shipment? shipment;
+  
+  const ActiveJobMapScreen({super.key, this.shipment});
 
   @override
   Widget build(BuildContext context) {
@@ -9,18 +13,30 @@ class ActiveJobMapScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF8FAFC),
       body: Stack(
         children: [
-          // Background Map (Placeholder)
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: NetworkImage('https://placeholder.com/full_map_light'), 
-                fit: BoxFit.cover,
-                opacity: 0.8,
+          // Background Map
+          if (shipment != null)
+            ShipmentMapWidget(
+              pickupLocation: shipment!.originPort ?? 'Origin',
+              dropLocation: shipment!.destinationPort ?? 'Destination',
+              pickupLatitude: shipment!.originLatitude,
+              pickupLongitude: shipment!.originLongitude,
+              dropLatitude: shipment!.destinationLatitude,
+              dropLongitude: shipment!.destinationLongitude,
+            )
+          else
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE2E8F0),
+              ),
+              child: const Center(
+                child: Text(
+                  'No active shipment',
+                  style: TextStyle(color: Color(0xFF64748B)),
+                ),
               ),
             ),
-          ),
           
           // Top Buttons
           SafeArea(
@@ -107,18 +123,18 @@ class ActiveJobMapScreen extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'SHP-2034',
-                            style: TextStyle(
+                          Text(
+                            shipment?.shipmentNumber ?? 'N/A',
+                            style: const TextStyle(
                               color: Color(0xFF1E293B),
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            'Chennai → Bangalore',
-                            style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                          Text(
+                            '${shipment?.originPort ?? 'Origin'} → ${shipment?.destinationPort ?? 'Destination'}',
+                            style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
                           ),
                         ],
                       ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/my_job_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/login_screen.dart';
+import 'core/auth_storage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -34,8 +36,47 @@ class MyApp extends StatelessWidget {
           backgroundColor: Colors.white,
         ),
       ),
-      home: const MainScreen(),
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _isLoading = true;
+  bool _isAuthenticated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    final authenticated = await AuthStorage.hasToken();
+    setState(() {
+      _isAuthenticated = authenticated;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return _isAuthenticated ? const MainScreen() : const LoginScreen();
   }
 }
 
